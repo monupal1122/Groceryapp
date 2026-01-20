@@ -1,11 +1,16 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext, useRef } from 'react';
+import RNFetchBlob from 'rn-fetch-blob';
+import { launchImageLibrary } from 'react-native-image-picker';
+import { Platform, PermissionsAndroid } from 'react-native';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Alert, Image, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import SweetAlert from '../utils/AlertManager';
 import { AuthContext } from '../context/AuthContext';
 
-const BASE_URL = 'https://grocery-backend-3pow.onrender.com';
+// const BASE_URL = 'https://grocery-backend-3pow.onrender.com';
+
 
 export default function PersonalInfoScreen({ navigation }) {
 	const [name, setName] = useState('');
@@ -16,12 +21,114 @@ export default function PersonalInfoScreen({ navigation }) {
 	const [bio, setBio] = useState('');
 	const [loading, setLoading] = useState(true);
 	const [saving, setSaving] = useState(false);
+	const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+	const [avatarUri, setAvatarUri] = useState(null);
+	const [avatarUrl, setAvatarUrl] = useState(null); // URL from backend
+	
+	// Store original values to detect changes
+	const originalValuesRef = useRef({});
+	
+
 	const { authToken, user } = useContext(AuthContext);
+
+	// Image picker handler with permissions
+	// Upload image to backend and get URL
+	const uploadImageToBackend = async (uri) => {
+		if (!uri || !authToken) return null;
+		try {
+			let filename = uri.split('/').pop();
+			let formData = new FormData();
+			formData.append('avatar', {
+				uri,
+				name: filename,
+				type: 'image/jpeg',
+			});
+			const res = await fetch(`${BASE_URL}/api/profile/upload-avatar`, {
+				method: 'POST',
+				headers: {
+					'Authorization': `Bearer ${authToken}`,
+					'Content-Type': 'multipart/form-data',
+				},
+				body: formData,
+			});
+			const data = await res.json();
+			if (res.ok && data.url) {
+				setAvatarUrl(data.url);
+				return data.url;
+			}
+			return null;
+		} catch (e) {
+			Alert.alert('Upload Failed', 'Could not upload image.');
+			return null;
+		}
+	};
+
+	const handlePickImage = async () => {
+		try {
+			if (Platform.OS === 'android') {
+				let granted = await PermissionsAndroid.request(
+					PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE,
+					{
+						title: 'Permission Required',
+						message: 'App needs access to your photo library to select an image.',
+						buttonNeutral: 'Ask Me Later',
+						buttonNegative: 'Cancel',
+						buttonPositive: 'OK',
+					},
+				);
+				if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
+					Alert.alert('Permission Denied', 'Cannot open gallery without permission.');
+					return;
+				}
+			}
+			launchImageLibrary({ mediaType: 'photo', quality: 0.7 }, (response) => {
+				if (response.didCancel) return;
+				if (response.errorCode) {
+					Alert.alert('Image Picker Error', response.errorMessage || 'Unknown error');
+					return;
+				}
+				if (response.assets && response.assets.length > 0) {
+					setAvatarUri(response.assets[0].uri);
+					setHasUnsavedChanges(true);
+				} else {
+					Alert.alert('No Image Selected', 'Please select an image from your gallery.');
+				}
+			});
+		} catch (err) {
+			Alert.alert('Error', 'Failed to open gallery. Please try again.');
+		}
+	};
 
 	// Fetch user profile on component mount
 	useEffect(() => {
 		fetchUserProfile();
 	}, []);
+
+	// Set up back button handler to check for unsaved changes
+	useEffect(() => {
+		const unsubscribe = navigation?.addListener('beforeRemove', (e) => {
+			if (!hasUnsavedChanges) {
+				return;
+			}
+
+			e.preventDefault();
+
+			SweetAlert.showAlertWithOptions({
+				title: 'Unsaved Changes',
+				subTitle: 'You have unsaved changes. Do you want to discard them?',
+				style: 'warning',
+				confirmButtonTitle: 'Discard',
+				cancelButtonTitle: 'Keep Editing',
+				confirmButtonColor: '#EF4444'
+			}, (isConfirmed) => {
+				if (isConfirmed) {
+					navigation?.dispatch(e.data.action);
+				}
+			});
+		});
+
+		return unsubscribe;
+	}, [navigation, hasUnsavedChanges]);
 
 	const fetchUserProfile = async () => {
 		try {
@@ -50,10 +157,33 @@ export default function PersonalInfoScreen({ navigation }) {
 					const date = new Date(profileData.dateOfBirth);
 					setDob(date.toISOString().split('T')[0]); // YYYY-MM-DD format
 				}
+				
+				// Store original values to track changes
+				originalValuesRef.current = {
+					name: profileData.fullName || '',
+					email: profileData.email || user?.email || '',
+					phone: profileData.phoneNumber || '',
+					gender: profileData.gender || '',
+					dob: profileData.dateOfBirth ? new Date(profileData.dateOfBirth).toISOString().split('T')[0] : '',
+					bio: profileData.bio || '',
+				};
+				
+				setHasUnsavedChanges(false);
 			} else if (response.status === 404) {
 				// Profile doesn't exist yet, use default values
 				setEmail(user?.email || '');
 				setName(user?.name || '');
+				
+				originalValuesRef.current = {
+					name: user?.name || '',
+					email: user?.email || '',
+					phone: '',
+					gender: '',
+					dob: '',
+					bio: '',
+				};
+				
+				setHasUnsavedChanges(false);
 			} else {
 				console.error('Failed to fetch profile');
 			}
@@ -62,6 +192,87 @@ export default function PersonalInfoScreen({ navigation }) {
 		} finally {
 			setLoading(false);
 		}
+	};
+
+	// Check for unsaved changes whenever user edits
+	const checkForChanges = (newValues) => {
+		const hasChanges = Object.keys(newValues).some(
+			key => newValues[key] !== originalValuesRef.current[key]
+		);
+		setHasUnsavedChanges(hasChanges);
+	};
+
+	// Handlers for each field with change detection
+	const handleNameChange = (text) => {
+		setName(text);
+		checkForChanges({
+			name: text,
+			email,
+			phone,
+			gender,
+			dob,
+			bio,
+		});
+	};
+
+	const handleEmailChange = (text) => {
+		setEmail(text);
+		checkForChanges({
+			name,
+			email: text,
+			phone,
+			gender,
+			dob,
+			bio,
+		});
+	};
+
+	const handlePhoneChange = (text) => {
+		setPhone(text);
+		checkForChanges({
+			name,
+			email,
+			phone: text,
+			gender,
+			dob,
+			bio,
+		});
+	};
+
+	const handleDobChange = (text) => {
+		setDob(text);
+		checkForChanges({
+			name,
+			email,
+			phone,
+			gender,
+			dob: text,
+			bio,
+		});
+	};
+
+	const handleGenderChange = (text) => {
+		setGender(text);
+		checkForChanges({
+			name,
+			email,
+			phone,
+			gender: text,
+			dob,
+			bio,
+		});
+	};
+
+	const handleBioChange = (text) => {
+		setBio(text);
+		checkForChanges({
+			name,
+			email,
+			phone,
+			gender,
+			dob,
+			bio: text,
+		});
 	};
 
 	const onSave = async () => {
@@ -91,13 +302,20 @@ export default function PersonalInfoScreen({ navigation }) {
 				return;
 			}
 
+
+			let uploadedAvatarUrl = avatarUrl;
+			if (avatarUri && !avatarUrl) {
+				uploadedAvatarUrl = await uploadImageToBackend(avatarUri);
+			}
+
 			const profileData = {
 				fullName: name,
 				email: email,
 				phoneNumber: phone,
 				gender: gender,
 				dateOfBirth: dob ? new Date(dob).toISOString() : null,
-				bio: bio
+				bio: bio,
+				avatar: uploadedAvatarUrl || undefined
 			};
 
 			const response = await fetch(`${BASE_URL}/api/profile`, {
@@ -172,11 +390,11 @@ export default function PersonalInfoScreen({ navigation }) {
 					<View style={styles.avatarContainer}>
 						<View style={styles.avatarCircle}>
 							<Image
-								source={{ uri:'https://ui-avatars.com/api/?name=User&background=16A34A&color=fff' }}
+								source={avatarUri ? { uri: avatarUri } : avatarUrl ? { uri: avatarUrl } : { uri: 'https://ui-avatars.com/api/?name=User&background=16A34A&color=fff' }}
 								style={styles.avatar}
 							/>
 						</View>
-						<TouchableOpacity style={styles.editAvatar}>
+						<TouchableOpacity style={styles.editAvatar} onPress={handlePickImage}>
 							<Icon name="camera" size={18} color="#fff" />
 						</TouchableOpacity>
 					</View>
@@ -193,7 +411,7 @@ export default function PersonalInfoScreen({ navigation }) {
 							placeholder="Full Name"
 							placeholderTextColor="#9CA3AF"
 							value={name}
-							onChangeText={setName}
+						onChangeText={handleNameChange}
 						/>
 					</View>
 
@@ -207,7 +425,7 @@ export default function PersonalInfoScreen({ navigation }) {
 							keyboardType="email-address"
 							autoCapitalize="none"
 							value={email}
-							onChangeText={setEmail}
+						onChangeText={handleEmailChange}
 						/>
 					</View>
 
@@ -220,7 +438,7 @@ export default function PersonalInfoScreen({ navigation }) {
 							placeholderTextColor="#9CA3AF"
 							keyboardType="phone-pad"
 							value={phone}
-							onChangeText={setPhone}
+						onChangeText={handlePhoneChange}
 						/>
 					</View>
 
@@ -232,7 +450,7 @@ export default function PersonalInfoScreen({ navigation }) {
 							placeholder="Date of Birth (YYYY-MM-DD)"
 							placeholderTextColor="#9CA3AF"
 							value={dob}
-							onChangeText={setDob}
+						onChangeText={handleDobChange}
 						/>
 					</View>
 
@@ -244,7 +462,7 @@ export default function PersonalInfoScreen({ navigation }) {
 							placeholder="Gender (Male/Female/Other)"
 							placeholderTextColor="#9CA3AF"
 							value={gender}
-							onChangeText={setGender}
+						onChangeText={handleGenderChange}
 						/>
 					</View>
 
@@ -256,7 +474,7 @@ export default function PersonalInfoScreen({ navigation }) {
 							placeholder="Bio (Tell us about yourself)"
 							placeholderTextColor="#9CA3AF"
 							value={bio}
-							onChangeText={setBio}
+							onChangeText={handleBioChange}
 							multiline
 							numberOfLines={3}
 						/>
@@ -265,9 +483,9 @@ export default function PersonalInfoScreen({ navigation }) {
 
 				{/* Save Button */}
 				<TouchableOpacity 
-					style={[styles.saveBtn, saving && styles.saveBtnDisabled]} 
-					onPress={onSave}
-					disabled={saving}
+				style={[styles.saveBtn, (saving || !hasUnsavedChanges) && styles.saveBtnDisabled]} 
+				onPress={onSave}
+				disabled={saving || !hasUnsavedChanges}
 				>
 					{saving ? (
 						<ActivityIndicator size="small" color="#fff" />
@@ -275,7 +493,7 @@ export default function PersonalInfoScreen({ navigation }) {
 						<Icon name="save-outline" size={20} color="#fff" />
 					)}
 					<Text style={styles.saveText}>
-						{saving ? 'Saving...' : 'Save Changes'}
+					{saving ? 'Saving...' : 'Save Changes'} {hasUnsavedChanges && '*'}
 					</Text>
 				</TouchableOpacity>
 			</ScrollView>

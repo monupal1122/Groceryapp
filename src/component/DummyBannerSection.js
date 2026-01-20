@@ -7,13 +7,28 @@ const { width } = Dimensions.get('window');
 const BANNERS = [
     {
         id: '1',
-        image: require('../assets/banner1.png'), // These will need to be moved to assets
+        image: require('../assets/banner3.jpg'), // These will need to be moved to assets
         title: 'Freshness Delivered'
     },
     {
         id: '2',
-        image: require('../assets/banner2.png'),
+        image: require('../assets/banner3.jpg'),
         title: '50% OFF'
+    },
+    {
+        id: '3',
+        image: require('../assets/banner4.webp'),
+        title: 'Daily Essentials'
+    },
+    {
+        id: '4',
+        image: require('../assets/banner5.jpg'),
+        title: 'Organic Choices'
+    },
+    {
+        id: '5',
+        image: require('../assets/banner6.jpg'),
+        title: 'Healthy Living'
     }
 ];
 
@@ -80,8 +95,8 @@ export default function DummyBannerSection() {
 
 const styles = StyleSheet.create({
     container: {
-        marginVertical: 16,
-        height: 180,
+        marginVertical: 3,
+        height: 200,
     },
     bannerContainer: {
         width: width,

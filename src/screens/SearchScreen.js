@@ -102,11 +102,12 @@ export default function SearchScreen({ navigation }) {
   return (
     <View style={styles.container}>
       <TextInput
-        style={styles.searchInput}
-        placeholder="Search for products..."
-        value={searchQuery}
-        onChangeText={setSearchQuery}
-      />
+  style={styles.searchInput}
+  placeholder="Search for products..."
+  placeholderTextColor="#575b61"  // Add this line - gray color
+  value={searchQuery}
+  onChangeText={setSearchQuery}
+/>
 
       {searchQuery.length === 0 ? (
         <View style={styles.emptySearchContainer}>
@@ -135,7 +136,7 @@ export default function SearchScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F0FDF4',
+    backgroundColor: '#d2f7dd',
   },
   loadingContainer: {
     flex: 1,
@@ -148,17 +149,17 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#333',
   },
-  searchInput: {
-    height: 45,
-    color: 'green',
-    borderColor: 'green',
-    borderWidth: 2,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    margin: 16,
-    fontSize: 16,
-    backgroundColor: '#FFFFFF',
-  },
+ searchInput: {
+  height: 45,
+  color: '#14a94b',           // Green text color (using hex for consistency)
+  borderColor: '#16A34A',     // Green border
+  borderWidth: 2,
+  borderRadius: 12,
+  paddingHorizontal: 16,
+  margin: 16,
+  fontSize: 16,
+  backgroundColor: '#FFFFFF', // Changed to white so you can see green text
+},
   emptySearchContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -167,7 +168,7 @@ const styles = StyleSheet.create({
   },
   emptySearchText: {
     fontSize: 16,
-    color: 'gray',
+    color: '#14a94b',
     textAlign: 'center',
   },
   listContent: {

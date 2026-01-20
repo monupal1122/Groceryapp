@@ -554,7 +554,7 @@ const ProductPage = ({ navigation }) => {
         {subcategories.length > 0 ? (
           <>
             <View style={styles.sidebarHeader}>
-              <Text style={styles.sidebarHeaderText}>Subcategories</Text>
+              <Text style={styles.sidebarHeaderText}>Subcategory</Text>
             </View>
             <FlatList
               ref={categoryListRef}
@@ -674,12 +674,12 @@ const styles = StyleSheet.create({
 
   sidebarHeader: {
     backgroundColor: "#16A34A",
-    padding: 10,
+    padding: 15,
     alignItems: "center",
   },
   sidebarHeaderText: {
     color: "#fff",
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: "bold",
   },
 

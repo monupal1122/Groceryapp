@@ -1,0 +1,3 @@
+- [x] Replace banner1.png with banner3.jpg in DummyBannerSection.js
+- [x] Clean Android build cache
+- [ ] Retry assembleRelease build (in progress - 6% complete, building native code)

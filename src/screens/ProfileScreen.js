@@ -40,7 +40,11 @@ export default function ProfileScreen({ navigation }) {
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Profile Section */}
         <View style={styles.profileSection}>
-          <Icon name="person-circle-outline" size={90} color="#D1D5DB" />
+          {user?.avatar ? (
+            <Image source={{ uri: user.avatar }} style={styles.avatar} />
+          ) : (
+            <Icon name="person-circle-outline" size={90} color="#D1D5DB" />
+          )}
           <Text style={styles.name}>{user?.username || "User"}</Text>
           <Text style={styles.email}>{user?.email || "No email"}</Text>
         </View>

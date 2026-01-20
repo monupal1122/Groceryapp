@@ -6,12 +6,14 @@ import { fetchWithRetry } from '../utils/api';
 const { width } = Dimensions.get('window');
 
 const BASE_URL = "https://grocery-backend-3pow.onrender.com";
+const AUTO_SCROLL_INTERVAL = 3000; // 3 seconds
 
 export default function PosterSection2() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [banner, setBanner] = useState([]);
   const [loading, setLoading] = useState(true);
   const flatListRef = useRef(null);
+  const intervalRef = useRef(null);
 
   useEffect(() => {
     const fetchBanners = async () => {
@@ -20,6 +22,7 @@ export default function PosterSection2() {
         const response = await fetchWithRetry(`${BASE_URL}/api/banners`);
         if (response && response.ok) {
           const json = await response.json();
+          console.log("Banners loaded:", json.banners);
           setBanner(json.banners || []);
         }
       } catch (err) {
@@ -32,6 +35,36 @@ export default function PosterSection2() {
     fetchBanners();
   }, []);
 
+  // Auto-scroll effect
+  useEffect(() => {
+    if (banner.length > 1) {
+      startAutoScroll();
+    }
+    
+    return () => {
+      stopAutoScroll();
+    };
+  }, [banner.length]);
+
+  const startAutoScroll = () => {
+    stopAutoScroll();
+    
+    intervalRef.current = setInterval(() => {
+      setCurrentIndex((prevIndex) => {
+        const nextIndex = (prevIndex + 1) % banner.length;
+        flatListRef.current?.scrollToIndex({ index: nextIndex, animated: true });
+        return nextIndex;
+      });
+    }, AUTO_SCROLL_INTERVAL);
+  };
+
+  const stopAutoScroll = () => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+  };
+
   const handleScroll = (event) => {
     const scrollPosition = event.nativeEvent.contentOffset.x;
     const index = Math.round(scrollPosition / (width - 20));
@@ -40,14 +73,29 @@ export default function PosterSection2() {
 
   const scrollToIndex = (index) => {
     flatListRef.current?.scrollToIndex({ index, animated: true });
+    setCurrentIndex(index);
+  };
+
+  const handleManualInteraction = () => {
+    stopAutoScroll();
+    // Restart auto-scroll after 5 seconds of no interaction
+    setTimeout(() => {
+      if (banner.length > 1) {
+        startAutoScroll();
+      }
+    }, 5000);
   };
 
   if (loading && banner.length === 0) {
     return (
-      <View style={{ height: 180, justifyContent: 'center', alignItems: 'center' }}>
+      <View style={styles.loadingContainer}>
         <ActivityIndicator size="small" color="#16A34A" />
       </View>
     );
+  }
+
+  if (banner.length === 0) {
+    return null;
   }
 
   return (
@@ -60,15 +108,31 @@ export default function PosterSection2() {
         pagingEnabled
         showsHorizontalScrollIndicator={false}
         onScroll={handleScroll}
+        onScrollBeginDrag={stopAutoScroll}
+        onScrollEndDrag={() => {
+          setTimeout(() => {
+            if (banner.length > 1) {
+              startAutoScroll();
+            }
+          }, 3000);
+        }}
         scrollEventThrottle={16}
         renderItem={({ item }) => {
           const imageUrl = item.imageUrl?.startsWith('http')
             ? item.imageUrl
             : `${BASE_URL}${item.imageUrl?.startsWith('/') ? '' : '/'}${item.imageUrl}`;
 
+          console.log("Rendering banner:", item.title, imageUrl);
+
           return (
             <View style={styles.bannerContainer}>
-              <Image source={{ uri: imageUrl }} style={styles.banner} resizeMode="cover" />
+              <Image 
+                source={{ uri: imageUrl }} 
+                style={styles.banner} 
+                resizeMode="cover"
+                onError={(error) => console.log("Image load error:", error.nativeEvent.error)}
+                onLoad={() => console.log("Image loaded:", imageUrl)}
+              />
               <View style={styles.overlay}>
                 <View style={styles.textContainer}>
                   <Text style={styles.bannerTitle}>{item.title}</Text>
@@ -88,7 +152,10 @@ export default function PosterSection2() {
               styles.dot,
               currentIndex === index && styles.activeDot,
             ]}
-            onPress={() => scrollToIndex(index)}
+            onPress={() => {
+              handleManualInteraction();
+              scrollToIndex(index);
+            }}
           />
         ))}
       </View>
@@ -97,6 +164,7 @@ export default function PosterSection2() {
       <TouchableOpacity
         style={[styles.navArrow, styles.leftArrow]}
         onPress={() => {
+          handleManualInteraction();
           const newIndex = currentIndex > 0 ? currentIndex - 1 : banner.length - 1;
           scrollToIndex(newIndex);
         }}
@@ -107,6 +175,7 @@ export default function PosterSection2() {
       <TouchableOpacity
         style={[styles.navArrow, styles.rightArrow]}
         onPress={() => {
+          handleManualInteraction();
           const newIndex = currentIndex < banner.length - 1 ? currentIndex + 1 : 0;
           scrollToIndex(newIndex);
         }}
@@ -122,6 +191,11 @@ const styles = StyleSheet.create({
     position: 'relative',
     marginVertical: 8,
   },
+  loadingContainer: {
+    height: 180,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   bannerContainer: {
     position: 'relative',
   },
@@ -130,6 +204,7 @@ const styles = StyleSheet.create({
     height: 180,
     borderRadius: 12,
     marginHorizontal: 10,
+    backgroundColor: '#F3F4F6',
   },
   overlay: {
     position: 'absolute',
@@ -149,12 +224,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#fff',
     marginBottom: 4,
-  },
-  bannerSubtitle: {
-    fontSize: 14,
-    color: '#fff',
-    opacity: 0.9,
-    fontWeight: '500',
   },
   pagination: {
     flexDirection: 'row',

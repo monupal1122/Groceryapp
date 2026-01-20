@@ -146,7 +146,7 @@ const ProductDetailScreen = ({ route, navigation }) => {
 
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Product Description</Text>
-            <Text style={styles.sectionText}>{product.description}</Text>
+            <Text style={styles.sectionText}>{product.desc}</Text>
           </View>
 
           <View style={styles.section}>

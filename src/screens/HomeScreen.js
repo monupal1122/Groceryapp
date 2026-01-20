@@ -11,6 +11,7 @@ import { ActivityIndicator } from 'react-native';
 import { AppContext } from '../context/AppContext';
 import { fetchWithRetry } from '../utils/api';
 import ProductCard from '../component/ProductCard';
+import { Pressable } from 'react-native';
 import DummyBannerSection from '../component/DummyBannerSection';
 
 const BASE_URL = "https://grocery-backend-3pow.onrender.com";
@@ -276,6 +277,51 @@ export default function HomeScreen({ navigation }) {
           </View>
         </View>
 
+ {/* Bottom Section */}
+      <View style={styles.bottomSection}>
+        <View style={styles.statsContainer}>
+          <View style={styles.statBox}>
+            <Text style={styles.statNumber}>10K+</Text>
+            <Text style={styles.statLabel}>Happy Customers</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statBox}>
+            <Text style={styles.statNumber}>500+</Text>
+            <Text style={styles.statLabel}>Products</Text>
+          </View>
+          <View style={styles.statDivider} />
+          <View style={styles.statBox}>
+            <Text style={styles.statNumber}>4.8★</Text>
+            <Text style={styles.statLabel}>Rating</Text>
+          </View>
+        </View>
+
+        <View style={styles.downloadBanner}>
+          <View style={styles.downloadContent}>
+            <Icon name="phone-portrait" size={40} color="#16A34A" />
+            <View style={styles.downloadText}>
+              <Text style={styles.downloadTitle}>Get Our App</Text>
+              <Text style={styles.downloadSubtitle}>Shop faster with mobile app</Text>
+            </View>
+          </View>
+          <Pressable style={styles.downloadButton}>
+            <Text style={styles.downloadButtonText}>Download</Text>
+          </Pressable>
+        </View>
+
+        <View style={styles.footer}>
+          <Text style={styles.footerText}>© 2026 Your Store. All rights reserved.</Text>
+          <View style={styles.footerLinks}>
+            <Text style={styles.footerLink}>Terms</Text>
+            <Text style={styles.footerDot}>•</Text>
+            <Text style={styles.footerLink}>Privacy</Text>
+            <Text style={styles.footerDot}>•</Text>
+            <Text style={styles.footerLink}>Help</Text>
+          </View>
+        </View>
+      </View>
+    
+
         {/* Bottom spacing */}
         <View style={styles.bottomSpacing} />
       </ScrollView>
@@ -339,8 +385,8 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   featuredSection: {
-    paddingHorizontal: 20,
-    paddingVertical: 20,
+    paddingHorizontal: 5,
+    paddingVertical: 10,
     backgroundColor: '#fff',
     marginVertical: 8,
     borderRadius: 16,
@@ -427,12 +473,14 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   quickActions: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingVertical: 20,
-    backgroundColor: '#fff',
-    marginVertical: 8,
-    borderRadius: 16,
-    marginHorizontal: 16,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1F2937',
+    marginBottom: 16,
   },
   actionsGrid: {
     flexDirection: 'row',
@@ -441,35 +489,32 @@ const styles = StyleSheet.create({
   },
   actionCard: {
     width: '48%',
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#FFFFFF',
     borderRadius: 16,
-    padding: 20,
-    alignItems: 'center',
+    padding: 16,
     marginBottom: 12,
+    alignItems: 'center',
     borderWidth: 1,
     borderColor: '#E5E7EB',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
   iconCircle: {
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#fff',
+    backgroundColor: '#F9FAFB',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 2,
   },
   actionText: {
     fontSize: 14,
-    fontWeight: '700',
-    color: '#111827',
+    fontWeight: '600',
+    color: '#1F2937',
     marginBottom: 4,
     textAlign: 'center',
   },
@@ -478,7 +523,107 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     textAlign: 'center',
   },
-  bottomSpacing: {
-    height: 20,
+  bottomSection: {
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    paddingBottom: 24,
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  statBox: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  statDivider: {
+    width: 1,
+    backgroundColor: '#E5E7EB',
+    marginHorizontal: 8,
+  },
+  statNumber: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#16A34A',
+    marginBottom: 4,
+  },
+  statLabel: {
+    fontSize: 12,
+    color: '#6B7280',
+    textAlign: 'center',
+  },
+  downloadBanner: {
+    backgroundColor: '#F0FDF4',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#BBF7D0',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  downloadContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  downloadText: {
+    marginLeft: 12,
+    flex: 1,
+  },
+  downloadTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1F2937',
+    marginBottom: 2,
+  },
+  downloadSubtitle: {
+    fontSize: 12,
+    color: '#6B7280',
+  },
+  downloadButton: {
+    backgroundColor: '#16A34A',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 8,
+  },
+  downloadButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  footer: {
+    alignItems: 'center',
+    paddingTop: 16,
+  },
+  footerText: {
+    fontSize: 12,
+    color: '#9CA3AF',
+    marginBottom: 8,
+  },
+  footerLinks: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  footerLink: {
+    fontSize: 12,
+    color: '#6B7280',
+    fontWeight: '500',
+  },
+  footerDot: {
+    fontSize: 12,
+    color: '#D1D5DB',
+    marginHorizontal: 8,
   },
 });

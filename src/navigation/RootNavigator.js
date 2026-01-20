@@ -1,10 +1,11 @@
-import React, { useContext } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import { View, ActivityIndicator } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { AuthContext } from '../context/AuthContext';
 import LoginScreen from '../screens/LoginScreen';
 import SignupScreen from '../screens/SignupScreen';
+import SplashScreen from '../screens/SplashScreen';
 // import OTPScreen from '../screens/OtpScreen';
 import BottomTabs from './BottomTabs';
 
@@ -12,13 +13,20 @@ const Stack = createNativeStackNavigator();
 
 export default function RootNavigator() {
   const { user, loading } = useContext(AuthContext);
+  const [showSplash, setShowSplash] = useState(true);
 
-  if (loading) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color="#00C853" />
-      </View>
-    );
+  useEffect(() => {
+    // Show splash screen for 3 seconds
+    const timer = setTimeout(() => {
+      setShowSplash(false);
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Show splash screen OR loading indicator
+  if (showSplash || loading) {
+    return <SplashScreen />;
   }
 
   return (

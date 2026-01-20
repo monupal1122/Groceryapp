@@ -9,26 +9,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import axios from 'axios';
 import { fetchWithRetry } from '../utils/api';
-import Icon from 'react-native-vector-icons/Ionicons';
-import LinearGradient from 'react-native-linear-gradient';
-
-// Gradient color combinations for categories
-const gradientColors = [
-  ['#FF6B9D', '#C44569'],  // Pink-Red
-  ['#56AB2F', '#A8E063'],  // Green
-  ['#4FACFE', '#00F2FE'],  // Blue
-  ['#FA709A', '#FEE140'],  // Pink-Yellow
-  ['#FF8008', '#FFC837'],  // Orange
-  ['#667EEA', '#764BA2'],  // Purple
-  ['#E55D87', '#5FC3E4'],  // Pink-Blue
-  ['#2E3192', '#1BFFFF'],  // Navy-Cyan
-  ['#F857A6', '#FF5858'],  // Pink-Red
-  ['#00C9FF', '#92FE9D'],  // Blue-Green
-  ['#FC466B', '#3F5EFB'],  // Red-Blue
-  ['#FDBB2D', '#22C1C3'],  // Yellow-Cyan
-];
 
 export default function CategorySection() {
   const navigation = useNavigation();
@@ -41,9 +22,7 @@ export default function CategorySection() {
       setLoading(true);
       setError(null);
       try {
-        const response = await fetchWithRetry('https://grocery-backend-3pow.onrender.com/api/categories', {
-          onRetry: (attempt) => console.log(`CategorySection - Retry attempt ${attempt}`)
-        });
+        const response = await fetchWithRetry('https://grocery-backend-3pow.onrender.com/api/categories');
 
         if (response && response.ok) {
           const resData = await response.json();
@@ -67,7 +46,7 @@ export default function CategorySection() {
 
   if (loading) {
     return (
-      <View style={[styles.container, styles.center]}>
+      <View style={styles.loadingContainer}>
         <ActivityIndicator size="small" color="#16A34A" />
       </View>
     );
@@ -75,7 +54,7 @@ export default function CategorySection() {
 
   if (error || categories.length === 0) {
     return (
-      <View style={[styles.container, styles.center]}>
+      <View style={styles.loadingContainer}>
         <Text style={styles.errorText}>{error || "No categories found"}</Text>
       </View>
     );
@@ -85,43 +64,32 @@ export default function CategorySection() {
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
-      style={styles.container}
-      contentContainerStyle={{ paddingHorizontal: 20 }}
+      contentContainerStyle={styles.scrollContent}
     >
-      {categories.map((item, index) => {
-        const colors = gradientColors[index % gradientColors.length];
-
+      {categories.map((item) => {
         return (
           <Pressable
             key={item._id}
-            style={({ pressed }) => [styles.card, { opacity: pressed ? 0.8 : 1 }]}
-            onPress={() =>
-              navigation.navigate('ProductPage', { categoryId: item._id })
-            }
+            style={({ pressed }) => [
+              styles.card,
+              { transform: [{ scale: pressed ? 0.95 : 1 }] }
+            ]}
+            onPress={() => navigation.navigate('ProductPage', { categoryId: item._id })}
           >
-            <LinearGradient
-              colors={colors}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.gradientBackground}
-            >
-              <View style={styles.imageContainer}>
-                <Image
-                  source={{
-                    uri: item.image?.startsWith('http')
-                      ? item.image
-                      : `${BASE_URL}${item.image?.startsWith('/') ? '' : '/'}${item.image}`
-                  }}
-                  style={styles.image}
-                  resizeMode="contain"
-                />
-                <View style={styles.iconOverlay}>
-                  <Icon name="chevron-forward" size={12} color="#16A34A" />
-                </View>
-              </View>
-
-              <Text style={styles.name} numberOfLines={1}>{item.name}</Text>
-            </LinearGradient>
+            <View style={styles.imageWrapper}>
+              <Image
+                source={{
+                  uri: item.image?.startsWith('http')
+                    ? item.image
+                    : `${BASE_URL}${item.image?.startsWith('/') ? '' : '/'}${item.image}`
+                }}
+                style={styles.image}
+                resizeMode="contain"
+              />
+            </View>
+            <Text style={styles.name} numberOfLines={2}>
+              {item.name}
+            </Text>
           </Pressable>
         );
       })}
@@ -130,79 +98,49 @@ export default function CategorySection() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    paddingHorizontal: 0,
-    flexDirection: 'row',
-    height: 120,
-  },
-  center: {
+  loadingContainer: {
+    height: 130,
     justifyContent: 'center',
     alignItems: 'center',
-    width: '100%',
   },
   errorText: {
     color: '#9CA3AF',
     fontSize: 12,
   },
+  scrollContent: {
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+  },
   card: {
     alignItems: 'center',
     marginRight: 20,
-    borderRadius: 12,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 4,
-    minWidth: 80,
-    overflow: 'hidden',
+    width: 90,
   },
-  gradientBackground: {
-    width: '100%',
-    alignItems: 'center',
-    padding: 12,
-    borderRadius: 12,
-  },
-  imageContainer: {
-    position: 'relative',
-    marginBottom: 8,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
-    borderRadius: 30,
-    padding: 4,
-  },
-  image: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-  },
-  iconOverlay: {
-    position: 'absolute',
-    top: -5,
-    right: -5,
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    width: 20,
-    height: 20,
+  imageWrapper: {
+    width: 90,
+    height: 90,
+    borderRadius: 20,
+    backgroundColor: '#F9FAFB',
     justifyContent: 'center',
     alignItems: 'center',
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  image: {
+    width: 60,
+    height: 60,
   },
   name: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#fff',
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#1F2937',
     textAlign: 'center',
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 2,
+    lineHeight: 16,
   },
 });
